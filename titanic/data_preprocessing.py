@@ -53,7 +53,7 @@ def categorize_age(x):
         return 3
     return 4
 train.Age = train.Age.apply(categorize_age)
-test.Age = train.Age.apply(categorize_age)
+test.Age = test.Age.apply(categorize_age)
 
 
 # Categorize Fare
@@ -66,16 +66,35 @@ def categorize_fare(x):
         return 2
     return 3
 train.Fare = train.Fare.apply(categorize_fare)
-test.Fare = train.Fare.apply(categorize_fare)
+test.Fare = test.Fare.apply(categorize_fare)
 
 
 # Change Sex to integer.
-def replace_sex(target):
-    target.Sex = target.Sex.replace('male', 0)
-    target.Sex = target.Sex.replace('female', 1)
-    return target
-train = replace_sex(train)
-test = replace_sex(test)
+# def replace_sex(target):
+#     target.Sex = target.Sex.replace('male', 0)
+#     target.Sex = target.Sex.replace('female', 1)
+#     return target
+# train = replace_sex(train)
+# test = replace_sex(test)
+
+
+# Categorize Sex with one hot encoding.
+def encode_one_hot_sex(target):
+    sex_encoded, sex_categories = target.Sex.factorize()
+    encoder = OneHotEncoder()
+    sex_hot = encoder.fit_transform(sex_encoded.reshape(-1, 1))
+    df_sex = pd.DataFrame(
+        sex_hot.toarray(),
+        columns=sex_categories
+    )
+    return pd.concat(
+        [target.drop('Sex', axis=1), df_sex],
+        axis=1,
+        join='inner'
+    )
+train = encode_one_hot_sex(train)
+test = encode_one_hot_sex(test)
+
 
 # Drop Ticket because it is roughly understood by Pclass.
 train.drop('Ticket', axis=1, inplace=True)
@@ -95,7 +114,6 @@ def encode_one_hot_embarked(target):
     embarked_encoded, embarked_categories = target.Embarked.factorize()
     encoder = OneHotEncoder()
     embarked_hot = encoder.fit_transform(embarked_encoded.reshape(-1, 1))
-    embarked_hot.toarray()
     df_embarked = pd.DataFrame(
         embarked_hot.toarray(),
         columns=embarked_categories
@@ -119,7 +137,7 @@ def encode_one_hot_name(target):
                 data.append(c)
                 break
         else:
-            if train.Sex[i] == 0:
+            if target.male[i] == 0:
                 data.append('Mr.')
             else:
                 data.append('Ms.')
@@ -127,7 +145,6 @@ def encode_one_hot_name(target):
     name_encoded, name_categories = pd.Series(data).factorize()
     encoder = OneHotEncoder()
     name_hot = encoder.fit_transform(name_encoded.reshape(-1, 1))
-    name_hot.toarray()
     df_name = pd.DataFrame(name_hot.toarray(), columns=name_categories)
     return pd.concat(
         [target.drop('Name', axis=1), df_name],
@@ -146,5 +163,5 @@ print('/_/ test /_/')
 print('/_/_/_/_/_/')
 print(test.head(10))
 
-train.to_csv('./preprocessed_train.csv')
-test.to_csv('./preprocessed_test.csv')
+train.to_csv('./preprocessed_train.csv', index=False)
+test.to_csv('./preprocessed_test.csv', index=False)
